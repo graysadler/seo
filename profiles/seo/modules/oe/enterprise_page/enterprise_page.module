@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the Enterprise Page feature.
- */
-
-include_once 'enterprise_page.features.inc';
