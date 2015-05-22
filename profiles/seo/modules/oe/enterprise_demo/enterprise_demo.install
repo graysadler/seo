@@ -1,0 +1,6 @@
+<?php
+
+function enterprise_demo_enable() {
+  return;
+}
+

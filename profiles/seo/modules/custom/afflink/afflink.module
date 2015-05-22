@@ -1,0 +1,16 @@
+<?php
+/**
+ * @file
+ * Code for the Affiliate Link feature.
+ */
+
+include_once 'afflink.features.inc';
+
+function afflink_node_view($node, $view_mode) {
+  if($node->type != 'afflink' || $view_mode != 'full') {
+    return;
+  }
+  
+  $url = $node->field_url['und'][0]['url'];
+  drupal_goto($url);
+}

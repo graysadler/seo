@@ -1,0 +1,40 @@
+<?php
+/**
+ * @file 
+ * Install include file. Implements database schema. 
+*/
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function contentoptimizer_uninstall() {
+
+}
+
+/**
+ *  Implementation of hook_schema
+ */
+
+function contentoptimizer_schema() {
+  $schema['contentoptimizer'] = array(
+    'description' => t('Creates database table for content optimizer keywords.'),
+    'fields' => array(
+      'aid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t('The content analysis id.'),  
+      ), //aid
+      'keyword' => array(
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => t('The targeted keyword phrase for the node.'),  
+      ), //keyword    
+    ),
+    'primary key' => array('aid'),
+  ); 
+  return $schema;
+}

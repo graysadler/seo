@@ -1,0 +1,1118 @@
+<?php
+
+define('CONFIG_RELEASE_HEADS_INFO_DIRECTORY', 'profiles/dwyer/config');
+define('CONFIG_RELEASE_PIVOTALTRACKER_PROJECT_ID', 1058640);
+define('CONFIG_RELEASE_PIVOTALTRACKER_API_TOKEN', 'd5a2726dd6135ae40ffcdd21d344ddaf');
+
+include_once(drupal_get_path('module', 'config_release') . '/parsedown.pivotaltracker.php');
+
+/**
+ * Implements hook_config_wizard_info
+ */
+function config_release_config_wizard_info() {
+  $wizard_info = array();
+  $wizard_weight = -100;
+
+  $release_info = config_release_release_info();
+  //dsm($release_info);
+
+  foreach ($release_info AS $rn => $ri) {
+    $wizard_name = 'release_' . str_replace('.', '_', $rn);
+    $wizard_info[$wizard_name] = array(
+      'title' => isset($ri['name']) ? $ri['name'] : "Release $rn",
+      'description' => isset($ri['description']) ? $ri['description'] : "",
+      //'file' => '/wizards/dwyr_config.' . $wizard_name . '.inc',
+      //'path' => drupal_get_path('module', 'dwyr_config'),
+      'category' => 'release',
+      //'menu_include' => 'admin/config',
+      'weight' => $wizard_weight+=10,
+      'release_num' => $rn,
+      'steps' => array(),
+      'release_info' => $ri,
+    );
+
+    // create overview step
+    $wizard_info[$wizard_name]['steps']['_overview'] = array(
+      'title' => t('Overview'),
+      'callback' => '_config_release_wizard_step_overview',
+      'weight' => -100,
+    );
+
+    // build out release steps if release is not archived
+    if (empty($ri['archive'])) {
+      $step_weight = 0;
+      foreach ($ri['step'] AS $i => $ri_step) {
+        $step = array(
+          'title' => isset($ri_step['name']) ? $ri_step['name'] : $i,
+          'callback' => isset($ri_step['config_callback']) ? : 'config_release_wizard_step_auto',
+          'weight' => $step_weight+=10,
+        );
+        if (!empty($ri_step['description'])) {
+          $step['description'] = $ri_step['description'];
+        }
+        if (!empty($ri_step['config_file'])) {
+          $step['file'] = $ri_step['config_file'];
+        }
+        if (!empty($ri_step['config'])) {
+          $step['config'] = $ri_step['config'];
+        }
+        if (!empty($ri_step['story_url'])) {
+          $step['story_url'] = $ri_step['story_url'];
+        }
+
+        $wizard_info[$wizard_name]['steps'][$i] = $step;
+      }
+      // create overview step
+      $wizard_info[$wizard_name]['steps']['_finished'] = array(
+        'title' => t('Finished'),
+        'callback' => '_config_release_wizard_step_finished',
+        'finished' => 1,
+        'weight' => $step_weight,
+      );
+      /*
+      foreach ($ri['branch'] AS $branch_name) {
+        $branch_key = str_replace('/', '__', $branch_name);
+        $branch_info = config_release_branch_info($branch_name);
+        $step = array(
+          'title' => isset($branch_info['name']) ? $branch_info['name'] : $branch_name,
+          'callback' => isset($branch_info['config_callback']) ? : 'config_release_wizard_step_auto',
+        );
+        if (!empty($branch_info['description'])) {
+          $step['description'] = $branch_info['description'];
+        }
+        if (!empty($branch_info['config_file'])) {
+          $step['file'] = $branch_info['config_file'];
+        }
+        $wizard_info[$wizard_name]['steps'][$branch_key] = $step;
+      }
+      */
+    }
+  }
+  return $wizard_info;
+
+  // Release 2.9.0 config
+  $wizard_name = 'release_2_9_0';
+  $wizard_info[$wizard_name] = array(
+    'title' => t('Release 2.9.0'),
+    'description' => t(''),
+    'file' => '/wizards/dwyr_config.' . $wizard_name . '.inc',
+    'path' => drupal_get_path('module', 'dwyr_config'),
+    'category' => 'release',
+    'menu_include' => 'admin/config',
+    'weight' => $wizard_weight+=10,
+    'steps' => array(),
+  );
+  $w = 0;
+  $wizard_info[$wizard_name]['steps']['feature_ca_locsearch'] = array(
+    'title' => t('Loc search not found msg'),
+    'description' => '',
+    'callback' => 'dwyr_config_wizard_feature_ca_locsearch',
+    //'skipable' => TRUE,
+    'weight' => $w+=10,
+  );
+  $wizard_info[$wizard_name]['steps']['feature_couponprint_js'] = array(
+    'title' => t('Coupon print js'),
+    'description' => '',
+    'callback' => 'dwyr_config_wizard_feature_couponprint_js',
+    //'skipable' => TRUE,
+    'weight' => $w+=10,
+  );
+  $wizard_info[$wizard_name]['steps']['finished'] = array(
+    'title' => t('Finished'),
+    'description' => '',
+    'callback' => 'dwyr_config_wizard_' . $wizard_name . '_finished',
+    'finished' => 1,
+    'weight' => $w+=10,
+  );
+
+  return $wizard_info;
+}
+
+function config_release_release() {
+  $release = array(
+    '0.0.0' => 0,
+    '2.12.0' => 1,
+  );
+
+  return $release;
+}
+
+function _config_release_wizard_step_overview($form, $form_state) {
+
+  $config_data = $form_state['config']['wizard_data'];
+  $release_info = $form_state['config']['wizard']['release_info'];
+  //dsm($form);
+  //dsm($form_state);
+  //dsm($config_data);
+
+  //return $form;
+
+
+
+  //$rel_stories_info = config_release_load_pivotaltracker_release_stories($form_state['config']['wizard']['release_num']);
+
+  //dsm($rel_stories_info);
+
+  $items = array();
+  foreach ($release_info['story'] as $sid => $story) {
+    $item = l($story['name'], $story['url'], array('attributes' => array('target' => $sid)));
+    $item .= '<p>' . substr($story['description'], 0, 80) . '</p>';
+    $items[] = $item;
+  }
+  $form['stories'] = array(
+    '#type' => 'item',
+    '#title' => t('Stories'),
+    '#markup' => theme('item_list', array('items' => $items)),
+  );
+
+  $items = array();
+  foreach ($release_info['branch'] as $id => $branch) {
+    $item = l($branch['name'], 'https://bitbucket.org/levelten/dwyr/branch/' . $id, array('attributes' => array('target' => 'bb_' . $id)));
+    //$item .= '<p>' . substr($story['description'], 0, 80) . '</p>';
+    $items[] = $item;
+  }
+  $form['branches'] = array(
+    '#type' => 'item',
+    '#title' => t('Branches'),
+    '#markup' => theme('item_list', array('items' => $items)),
+  );
+
+
+  return $form;
+}
+
+function config_release_wizard_step_auto($form, $form_state) {
+
+  $config_data = $form_state['config']['wizard_data'];
+  $release_info = $form_state['config']['wizard']['release_info'];
+  $step_info = $form_state['config']['wizard']['steps'][$config_data['_status']['step_n']];
+  $main = '';
+
+  $parsedown = new Parsedown();
+
+  $css = "
+  #config-wizard form p {
+    margin-top: 10px !important;
+  }";
+
+  drupal_add_css($css, array('type' => 'inline'));
+
+
+  //dsm($form);
+  //dsm($form_state);
+  //dsm($config_data);
+  //dsm($release_info);
+  //dsm($step_info);
+
+  if ($step_info['story_url']) {
+    $form['story_url'] = array(
+      '#type' => 'item',
+      '#title' => t('Story url'),
+      '#markup' => l($step_info['story_url'], $step_info['story_url'], array('attributes' => array('target' => 'ptstory'))),
+    );
+  }
+
+
+  $fields = array(
+    'description' => array(
+      '#title' => t('Description'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    ),
+    'config' => array(
+      '#title' => t('Configuration'),
+    ),
+
+  );
+  foreach ($fields as $key => $field) {
+    if (!empty($step_info[$key]) ) {
+      $form[$key] = $field + array(
+        '#type' => 'fieldset',
+      );
+
+      $text = $step_info[$key];
+
+      if ($form[$key]['#type'] == 'fieldset') {
+        $form[$key][$key] = array(
+          '#markup' => config_release_parse_markdown($text),
+        );
+      }
+      else {
+        $form[$key]['#markup'] = config_release_parse_markdown($text);
+      }
+    }
+  }
+
+  return $form;
+}
+
+function config_release_wizard_step_finished($form, $form_state) {
+  $config = $form_state['config'];
+  $wizard = $config['wizard'];
+  $config_data = $config['wizard_data'];
+
+  $form['main'] = array(
+    '#markup' => t('Done'),
+  );
+
+  return $form;
+}
+
+function config_release_parse_markdown($text, $single_line = 0) {
+  $parsedown = new Parsedown();
+
+  $markup = $text;
+
+  $markup = $parsedown->text($markup);
+  //dsm($markup);
+
+  if ($single_line) {
+    $markup = str_replace('<p>', '', $markup);
+    $markup = str_replace('</p>', '', $markup);
+  }
+
+  //$markup = check_markup($markup, 'full_html');
+
+  //dsm($markup);
+  //$markup = str_replace('</p>', '</p><br />', $markup);
+
+  // use regex to replace relative links in (/url) pattern
+  //$pattern = "/\(\/.*\)/";
+  $pattern = "/\(\/(.*?)\)/";
+  if(preg_match_all($pattern, $markup, $matches)) {
+    if (!empty($matches[0])) {
+      foreach ($matches[0] as $i => $str0) {
+        $str1 = l('/' . $matches[1][$i], $matches[1][$i]);
+        $markup = str_replace($str0, $str1, $markup);
+      }
+    }
+
+  }
+
+  return $markup;
+}
+
+function config_release_wizard_step_auto_tests($form, $form_state, $data) {
+
+  $config_data = $form_state['config']['wizard_data'];
+  $release_info = $form_state['config']['wizard']['release_info'];
+  $step_info = $release_info['step'][$config_data['_status']['step_n']];
+
+  $parsedown = new Parsedown();
+
+  //dsm($form);
+  //dsm($form_state);
+  //dsm($config_data);
+  //dsm($release_info);
+  //dsm($step_info);
+  $tests = array();
+
+  if (!empty($step_info['test']['manual'])) {
+    foreach ($step_info['test']['manual'] as $i => $test) {
+      $lines = explode(PHP_EOL, $test, 2);
+      $key = 'manual_' . $i;
+      $tests[$key] = array(
+        '#title' => config_release_parse_markdown($lines[0], 1),
+      );
+      if (!empty($lines[1])) {
+        $tests[$key]['#description'] = config_release_parse_markdown($lines[1]);
+      }
+    }
+  }
+
+  /*
+  $tests['homepage_locsearch_box'] = array(
+    '#title' => t('Correct results not found message displayed using location search box.'),
+    '#description' => t('Go to !test_link and search on the zip "00000". Verify that the above updated message is the one that appears.',
+      array(
+        '!test_link' => l(t('the home page'), '<front>', array('attributes' => array('target' => '_blank'))),
+      )
+    ),
+  );
+  */
+  return $tests;
+}
+
+function config_release_release_info($release_name = null) {
+  $info = array();
+  // get info from project files
+  $dir = CONFIG_RELEASE_HEADS_INFO_DIRECTORY;
+  $dir = '.' . $GLOBALS['base_path'] . $dir . '/release';
+  if(file_exists($dir) && is_dir($dir)) {
+    if (isset($release_name)) {
+      $filenames = array($release_name . '.info');
+    }
+    else {
+      $filenames = scandir($dir);
+    }
+
+    foreach ($filenames AS $filename) {
+      // filter .info files
+      if (substr($filename, -5) == '.info') {
+        $rel_num = substr($filename, 0, -5);
+        $info[$rel_num] = drupal_parse_info_file($dir . '/' . $filename);
+        $info[$rel_num] += array(
+          'story' => array(),
+          'branch' => array(),
+          'step' => array(),
+        );
+
+        if (!empty($info[$rel_num]['story_tag']) && is_array($info[$rel_num]['story_tag'])) {
+          foreach ($info[$rel_num]['story_tag'] AS $ii => $story_tag) {
+            $vars = array(
+              'include_comments' => 1,
+              'refresh' => 1,
+            );
+            $story_datas = config_release_load_pivotaltracker_stories_by_tag($story_tag, $vars);
+
+            if (!empty($story_datas) && is_array($story_datas)) {
+              foreach($story_datas as $iii => $story_data) {
+                $skey = 'ptid_' . $story_data->id;
+                $story_info = config_release_parse_pivotaltracker_story_data($story_data);
+                $info[$rel_num]['story'][$skey] = $story_info;
+                if (!empty($story_info['config'])) {
+                  $stepkey = 'story_' . $skey;
+                  $info[$rel_num]['step'][$stepkey] = array(
+                    'name' => t('Story: ') . $story_info['name'],
+                  );
+                  if (isset($story_info['description'])) {
+                    $info[$rel_num]['step'][$stepkey]['description'] = $story_info['description'];
+                  }
+                  if (isset($story_info['config'])) {
+                    $info[$rel_num]['step'][$stepkey]['config'] = $story_info['config'];
+                  }
+                  if (isset($story_info['test'])) {
+                    $info[$rel_num]['step'][$stepkey]['test'] = $story_info['test'];
+                  }
+                  if (isset($story_info['url'])) {
+                    $info[$rel_num]['step'][$stepkey]['story_url'] = $story_info['url'];
+                  }
+                }
+
+                if (!empty($story_info['branch'])) {
+                  if (!is_array($story_info['branch'])) {
+                    $story_info['branch'] = array($story_info['branch']);
+                  }
+                  foreach ($story_info['branch'] as $branch) {
+                    $info[$rel_num]['branch'][$branch] = array(
+                      'name' => $branch,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return $info;
+}
+
+function config_release_load_stories_by_tag($tag) {
+  $stories = array();
+  $data = config_release_load_pivotaltracker_stories_by_tag($tag);
+  if (!empty($data->data) && is_array($data->data)) {
+    foreach ($data->data as $ptstory) {
+      $stories[] = config_release_parse_pivotaltracker_story_info($ptstory);
+    }
+  }
+  //dsm($stories);
+}
+
+function config_release_branch_info($branch = null) {
+  $info = FALSE;
+  $dir = CONFIG_RELEASE_HEADS_INFO_DIRECTORY;
+  $filename = '.' . $GLOBALS['base_path'] . $dir . '/' . $branch;
+
+  /*
+  if(file_exists($filename . '.yml')) {
+    dsm("$filename");
+    $str = file_get_contents($filename . '.yml');
+    //$info = yaml_parse($str);
+  }
+  */
+  if(file_exists($filename . '.yml')) {
+    $info = drupal_parse_info_file($filename . '.info');
+  }
+
+  return $info;
+}
+
+/**
+ * Returns the branches in the site's git repo
+ * @return mixed
+ */
+function config_release_exec_git_branch() {
+  $branches = &drupal_static(__FUNCTION__);
+  if (isset($branches)) {
+    return $branches;
+  }
+  exec('git branch', $branches);
+  return $branches;
+}
+
+function config_release_exec_git_branch_current() {
+  $branch = &drupal_static(__FUNCTION__);
+  if (isset($branch)) {
+    return $branch;
+  }
+  $branch = FALSE;
+  $branches = config_release_exec_git_branch();
+  foreach ($branches as $b) {
+    if (substr($b, 0, 2) == '* ') {
+      $branch = $b;
+      break;
+    }
+  }
+  return $branch;
+}
+
+function config_release_load_story_info($id) {
+  return config_release_load_pivotaltracker_story($id);
+}
+
+function config_release_parse_pivotaltracker_story_data($story_data) {
+  $info = array(
+    'name' => $story_data->name,
+    'description' => !empty($story_data->description) ? $story_data->description : '',
+    'pivotaltracker' => $story_data,
+  );
+
+  if (!empty($story_data->url)) {
+    $info['url'] = $story_data->url;
+  }
+
+  $messages = array();
+  $keys = array();
+  if (!empty($story_data->description)) {
+    $messages[] = $story_data->description;
+  }
+  if (!empty($story_data->comments) && is_array($story_data->comments)) {
+    foreach ($story_data->comments as $comment) {
+      $messages[] = $comment->text;
+    }
+  }
+
+  $info_text = '';
+
+  $str_eol = "EOL";
+
+  foreach ($messages as $msg) {
+    $lines = explode("\n", $msg);
+    $text_buffer = '';
+    foreach ($lines as $line) {
+      // check for lines in the format of "$name = value"
+      if (substr($line, 0, 5) == 'info.' && ((strpos($line, '=') > 0) || (strpos($line, ':') > 0))) {
+        // if text buffer running and new info line hit, save out buffer
+        if ($text_buffer) {
+          $info_text .= $text_buffer . PHP_EOL;
+          $text_buffer = '';
+        }
+        if (strpos($line, '=') > 0) {
+          $line = substr($line, 5);
+          $keyval = explode('=', $line);
+          $key = trim($keyval[0]);
+          $info_text .= $line . PHP_EOL;
+        }
+        else {
+          $line = substr(str_replace(':', '=', $line), 5);
+          $text_buffer = $line;
+        }
+      }
+      else if ($text_buffer) {
+        // if text buffer is terminated with $$, end buffer
+        if (substr($line, 0, 3) == ':::') {
+          $info_text .= $text_buffer . PHP_EOL;
+          $text_buffer = '';
+        }
+        else {
+          $text_buffer .= $line . $str_eol;
+        }
+      }
+    }
+    if ($text_buffer) {
+      $info_text .= $text_buffer . PHP_EOL;
+    }
+  }
+//dsm($info_text);
+  $info1 = drupal_parse_info_format($info_text);
+  $info1 = config_release_info_format_replace($info1);
+
+  $info = drupal_array_merge_deep($info, $info1);
+
+  return $info;
+}
+
+function config_release_info_format_replace($info) {
+  foreach ($info as $i => $t) {
+    if (is_array($t)) {
+      $info[$i] = config_release_info_format_replace($t);
+    }
+    else {
+      $info[$i] = str_replace('EOL', PHP_EOL, $t);
+    }
+  }
+  return $info;
+}
+
+function config_release_load_pivotaltracker_story($id, $vars = array()) {
+  $info = array();
+  $ptApi = new PivotalTrackerREST(CONFIG_RELEASE_PIVOTALTRACKER_API_TOKEN);
+  $url = "projects/" . CONFIG_RELEASE_PIVOTALTRACKER_PROJECT_ID . "/stories/$id";
+  $json_data = $ptApi->get($url);
+  $data = json_decode($json_data);
+  if (!empty($vars['include_comments'])) {
+    $data->comments = config_release_load_pivotaltracker_story_comments($id);
+  }
+  return $data;
+}
+
+function config_release_load_pivotaltracker_story_comments($id) {
+  $info = array();
+  $ptApi = new PivotalTrackerREST(CONFIG_RELEASE_PIVOTALTRACKER_API_TOKEN);
+  $url = "projects/" . CONFIG_RELEASE_PIVOTALTRACKER_PROJECT_ID . "/stories/$id/comments";
+  $data = $ptApi->get($url);
+  $info = json_decode($data);
+  return $info;
+}
+
+function config_release_load_pivotaltracker_story_activities($id) {
+  $info = array();
+  $ptApi = new PivotalTrackerREST(CONFIG_RELEASE_PIVOTALTRACKER_API_TOKEN);
+  $url = "projects/" . CONFIG_RELEASE_PIVOTALTRACKER_PROJECT_ID . "/stories/$id/activity";
+  $data = $ptApi->get($url);
+  $info = json_decode($data);
+  return $info;
+}
+
+function config_release_load_pivotaltracker_stories_by_tag($tag, $vars = array()) {
+  $info = array();
+  $cache_key = 'config_stories_tag_' . $tag;
+  if (empty($vars['refresh'])) {
+    if ($cache = cache_get($cache_key)) {
+      return $cache->data;
+    }
+  }
+
+  $ptApi = new PivotalTrackerREST(CONFIG_RELEASE_PIVOTALTRACKER_API_TOKEN);
+  $url = "projects/" . CONFIG_RELEASE_PIVOTALTRACKER_PROJECT_ID . "/stories";
+  $vars = array(
+    'filter' => "label:" . urlencode($tag) . " includedone:true",
+  );
+  $json_data = $ptApi->get($url, $vars);
+  $data = json_decode($json_data);
+
+  //dsm($data);
+
+  if (!empty($vars['include_comments'])) {
+    foreach ($data as $i => $d) {
+      $data[$i]->comments = config_release_load_pivotaltracker_story_comments($d->id);
+    }
+  }
+
+  cache_set($cache_key, $data, 'cache');
+
+  return $data;
+}
+
+class PivotalTrackerREST {
+
+  // Public properties
+  public $base_url  = '';
+  public $force_ssl = false;
+  public $token = null;
+
+  // Protected properties
+  protected $username = '';
+  protected $password = '';
+
+  /**
+   * Constructor:
+   *
+   * @param type $token
+   */
+  public function __construct( $token = null ){
+
+    $this->base_url = 'https://www.pivotaltracker.com/services/v5/';
+
+    if( !empty($token) ){
+
+      $this->token = $token;
+
+    } // End of if( !empty($token) )
+
+  } // End of public function __construct( $token = null )
+
+  /**
+   * Check if authenticated
+   *
+   * @return type
+   */
+  public function is_authenticated(){
+
+    return !empty($this->token);
+
+  } // End of public function is_authenticated()
+
+  /**
+   * Helper function to quickly authenticate
+   *
+   * @return type
+   */
+  public function authenticate(){
+
+    if( !$this->is_authenticated() ){
+
+      $token_arr = $this->tokens_active($this->username, $this->password);
+
+      $this->_store_authentication($token_arr);
+
+    } // End of if( !$this->is_authenticated() )
+
+    return $this->token;
+
+  } // End of public function authenticate()
+
+  /**
+   * Tokens Active
+   *
+   * @todo Should really be in the other class, but it's needed for the authentication method
+   *
+   * @param type $username
+   * @param type $password
+   *
+   * @return type
+   */
+  public function tokens_active( $username, $password ){
+
+    $auth = array(
+      'username' => $username,
+      'password' => $password,
+    );
+
+    $function = 'tokens/active';
+    $token_arr = $this->_execute($function, null, 'GET', $auth);
+
+    return $token_arr;
+
+  } // End of public function tokens_active( $username, $password )
+
+  /*
+   * @todo MARK - not sure if the methods below were intended to be protected.
+   * It appears that they were and should be, and therefore have been set to
+   * protected. After I come back to test, I'll confirm and remove this comment.
+   */
+
+  /**
+   *
+   * @param type $token_arr
+   */
+  protected function _store_authentication( $token_arr ){
+
+    $this->token = $token_arr['token']['guid'];
+    $this->user_id = $token_arr['token']['id'];
+
+  } // End of protected function _store_authentication( $token_arr )
+
+  /**
+   * Execute
+   *
+   * @param type $function
+   * @param type $vars
+   * @param type $method
+   * @param type $auth
+   *
+   * @return type
+   */
+  protected function _execute( $function, $vars=null, $method='GET', $auth=null ){
+
+    $xml = $this->_curl($function, $vars, $method, $auth);
+
+    $arr = $this->_process_xml($xml);
+
+    return $arr;
+
+  } // End of protected function _execute( $function, $vars=null, $method='GET', $auth=null )
+
+  /**
+   * Process XML
+   *
+   * @param type $xml
+   * @param type $flattenValues
+   * @param type $flattenAttributes
+   * @param type $flattenChildren
+   *
+   * @return type
+   */
+  protected function _process_xml($xml
+    ,$flattenValues     = true
+    ,$flattenAttributes = true
+    ,$flattenChildren   = false
+  ){
+
+    $result_arr = $this->xml2array($xml, 0);
+    //print_rr(htmlentities($xml));
+    //print_rr($result_arr);
+
+    return $result_arr;
+
+  } // End of protected function _process_xml( $xml, $flattenValues = true, $flattenAttributes = true, $flattenChildren = false )
+
+  /**
+   * Get
+   *
+   * @param type $url
+   * @param type $vars
+   */
+  public function get($url, $vars = null ){
+
+    return $this->_curl($url, $vars, 'GET');
+
+  } // End of protected function _get( $url, $vars = null )
+
+  /**
+   * Get
+   *
+   * @param type $url
+   * @param type $vars
+   */
+  protected function _get( $url, $vars = null ){
+
+    $this->_curl($url, $vars, 'GET');
+
+  } // End of protected function _get( $url, $vars = null )
+
+  /**
+   * POST
+   *
+   * @param type $url
+   * @param type $vars
+   */
+  protected function _post( $url, $vars ){
+
+    $this->_curl($url, $vars, 'POST');
+
+  } // End of protected function _post( $url, $vars )
+
+  /**
+   * PUT
+   *
+   * @param type $url
+   * @param type $vars
+   */
+  protected function _put( $url, $vars ){
+
+    $this->_curl($url, $vars, 'PUT');
+
+  } // End of protected function _put( $url, $vars )
+
+  /**
+   * DELETE
+   *
+   * @param type $url
+   * @param type $vars
+   */
+  protected function _delete( $url, $vars ){
+
+    $this->_curl($url, $vars, 'DELETE');
+
+  } // End of protected function _delete( $url, $vars )
+
+
+  /*
+  $function String the end of the URL for the function call. Example: 'tokens/active'
+  $vars Array associate array for post data
+  $method String HTTP method
+  $auth Array associative array for username and password
+   */
+
+  /**
+   * CURL
+   *
+   * @param type   $function
+   * @param type   $vars
+   * @param string $method   Default is GET
+   * @param type   $auth
+   *
+   * @return type
+   */
+  protected function _curl( $function, $vars = null, $method = 'GET', $auth = null ){
+
+    // @todo CLEANUP THIS METHOD
+    //
+// Construct the full URL
+    $url = $this->base_url.$function;
+
+
+    $url = str_replace( "&amp;", "&", urldecode(trim($url)) );
+
+
+    $fields = (is_array($vars)) ? http_build_query($vars) : $vars;
+//dsm($url);
+//dsm($fields);
+    if ($method == 'GET' && !empty($fields)) {
+      $url .= '?' . $fields;
+    }
+    $ch = curl_init($url);
+
+// Follow redirects
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+
+//return the transfer as a string
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+// Set the request type
+    switch ($method) {
+      case 'GET':
+        curl_setopt($ch, CURLOPT_HTTPGET, 1);
+        break;
+      case 'POST':
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Length: ' . strlen($fields)));
+        break;
+      case 'PUT':
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Length: ' . strlen($fields)));
+        break;
+      case 'DELETE':
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Length: ' . strlen($fields)));
+        break;
+      default:
+//TODO
+        break;
+    }
+
+
+// Add the Pivotal Tracker token
+
+    if(!empty($this->token)) {
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-TrackerToken: ' . $this->token));
+    }
+
+
+
+// add user authentication if necessary
+    $do_auth = !empty($auth) && is_array($auth) && !empty($auth['username']) && !empty($auth['password']);
+    if($do_auth) {
+      curl_setopt($ch, CURLOPT_USERPWD, $auth['username'].':'.$auth['password']);
+    }
+
+// force ssl if necessary
+// TODO: Maybe it should alway suse SSL??
+    if($this->force_ssl || $do_auth) {
+      curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANYSAFE);
+    } else {
+      curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+    }
+
+// Warning: This will blindly accept any certificate (even self signed ones) and is essentially unsecure
+// TODO: Do real authentication. http://unitstep.net/blog/2009/05/05/using-curl-in-php-to-access-https-ssltls-protected-sites/
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+
+// Debug stuff
+//$this->_rest_debug($ch);
+
+
+// $output contains the output string
+    $output = curl_exec($ch);
+    //dsm($output);
+//print_rr($output);
+
+// $response contains the response HTTP headers
+    $response = curl_getinfo($ch);
+    //dsm($response);
+//print_rr($response);
+
+// close curl resource to free up system resources
+    if (curl_errno($ch))
+      return curl_error($ch);
+    else
+      curl_close($ch);
+
+    return $output;
+
+  } // End of protected function _curl( $function, $vars = null, $method = 'GET', $auth = null )
+
+  /**
+   * REST Debug
+   *
+   * @param type $ch
+   */
+  protected function _rest_debug( $ch ){
+
+    curl_setopt($ch, CURLOPT_HEADER, 1);
+    curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+
+    $response_data = curl_exec($ch);
+
+    header('Content-Type: text/html');
+    print_rr('response_data:');
+    print_rr($response_data); // Request header
+    print_rr('all curl info:');
+    print_rr(curl_getinfo($ch)); // Response header
+
+    die();
+
+  } // End of protected function _rest_debug( $ch )
+
+
+  /**
+   * XML to Array
+   *
+   * @param type $contents
+   * @param type $get_attributes
+   * @param type $priority
+   *
+   * @return type
+   */
+  public function xml2array( $contents, $get_attributes = 1, $priority = 'tag'){
+
+    /*
+     * @todo CLEANUP THIS METHOD (xml2array)
+     */
+
+    /**
+     * xml2array() will convert the given XML text to an array in the XML structure.
+     * Link: http://www.bin-co.com/php/scripts/xml2array/
+     * Arguments : $contents - The XML text
+     *                $get_attributes - 1 or 0. If this is 1 the function will get the attributes as well as the tag values - this results in a different array structure in the return value.
+     *                $priority - Can be 'tag' or 'attribute'. This will change the way the resulting array sturcture. For 'tag', the tags are given more importance.
+     * Return: The parsed XML in an array form. Use print_r() to see the resulting array structure.
+     * Examples: $array =  xml2array(file_get_contents('feed.xml'));
+     *              $array =  xml2array(file_get_contents('feed.xml', 1, 'attribute'));
+     */
+
+    if(!$contents) return array();
+
+    if(!function_exists('xml_parser_create')) {
+      //print "'xml_parser_create()' function not found!";
+      return array();
+    }
+
+    //Get the XML parser of PHP - PHP must have this module for the parser to work
+    $parser = xml_parser_create('');
+    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8"); # http://minutillo.com/steve/weblog/2004/6/17/php-xml-and-character-encodings-a-tale-of-sadness-rage-and-data-loss
+    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+    xml_parse_into_struct($parser, trim($contents), $xml_values);
+    xml_parser_free($parser);
+
+    if(!$xml_values) return;//Hmm...
+
+    //Initializations
+    $xml_array = array();
+    $parents = array();
+    $opened_tags = array();
+    $arr = array();
+
+    $current = &$xml_array; //Refference
+
+    //Go through the tags.
+    $repeated_tag_index = array();//Multiple tags with same name will be turned into an array
+    foreach($xml_values as $data) {
+      unset($attributes,$value);//Remove existing values, or there will be trouble
+
+      //This command will extract these variables into the foreach scope
+      // tag(string), type(string), level(int), attributes(array).
+      extract($data);//We could use the array by itself, but this cooler.
+
+      $result = array();
+      $attributes_data = array();
+
+      if(isset($value)) {
+        if($priority == 'tag') $result = $value;
+        else $result['value'] = $value; //Put the value in a assoc array if we are in the 'Attribute' mode
+      }
+
+      //Set the attributes too.
+      if(isset($attributes) and $get_attributes) {
+        foreach($attributes as $attr => $val) {
+          if($priority == 'tag') $attributes_data[$attr] = $val;
+          else $result['attr'][$attr] = $val; //Set all the attributes in a array called 'attr'
+        }
+      }
+
+      //See tag status and do the needed.
+      if($type == "open") {//The starting of the tag '<tag>'
+        $parent[$level-1] = &$current;
+        if(!is_array($current) or (!in_array($tag, array_keys($current)))) { //Insert New tag
+          $current[$tag] = $result;
+          if($attributes_data) $current[$tag. '_attr'] = $attributes_data;
+          $repeated_tag_index[$tag.'_'.$level] = 1;
+
+          $current = &$current[$tag];
+
+        } else { //There was another element with the same tag name
+
+          if(isset($current[$tag][0])) {//If there is a 0th element it is already an array
+            $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
+            $repeated_tag_index[$tag.'_'.$level]++;
+          } else {//This section will make the value an array if multiple tags with the same name appear together
+            $current[$tag] = array($current[$tag],$result);//This will combine the existing item and the new item together to make an array
+            $repeated_tag_index[$tag.'_'.$level] = 2;
+
+            if(isset($current[$tag.'_attr'])) { //The attribute of the last(0th) tag must be moved as well
+              $current[$tag]['0_attr'] = $current[$tag.'_attr'];
+              unset($current[$tag.'_attr']);
+            }
+
+          }
+          $last_item_index = $repeated_tag_index[$tag.'_'.$level]-1;
+          $current = &$current[$tag][$last_item_index];
+        }
+
+      } elseif($type == "complete") { //Tags that ends in 1 line '<tag />'
+        //See if the key is already taken.
+        if(!isset($current[$tag])) { //New Key
+          $current[$tag] = $result;
+          $repeated_tag_index[$tag.'_'.$level] = 1;
+          if($priority == 'tag' and $attributes_data) $current[$tag. '_attr'] = $attributes_data;
+
+        } else { //If taken, put all things inside a list(array)
+          if(isset($current[$tag][0]) and is_array($current[$tag])) {//If it is already an array...
+
+            // ...push the new element into that array.
+            $current[$tag][$repeated_tag_index[$tag.'_'.$level]] = $result;
+
+            if($priority == 'tag' and $get_attributes and $attributes_data) {
+              $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
+            }
+            $repeated_tag_index[$tag.'_'.$level]++;
+
+          } else { //If it is not an array...
+            $current[$tag] = array($current[$tag],$result); //...Make it an array using using the existing value and the new value
+            $repeated_tag_index[$tag.'_'.$level] = 1;
+            if($priority == 'tag' and $get_attributes) {
+              if(isset($current[$tag.'_attr'])) { //The attribute of the last(0th) tag must be moved as well
+
+                $current[$tag]['0_attr'] = $current[$tag.'_attr'];
+                unset($current[$tag.'_attr']);
+              }
+
+              if($attributes_data) {
+                $current[$tag][$repeated_tag_index[$tag.'_'.$level] . '_attr'] = $attributes_data;
+              }
+            }
+            $repeated_tag_index[$tag.'_'.$level]++; //0 and 1 index is already taken
+          }
+        }
+
+      } elseif($type == 'close') { //End of tag '</tag>'
+        $current = &$parent[$level-1];
+      }
+    }
+
+    return($xml_array);
+
+  } // End of public function xml2array( $contents, $get_attributes = 1, $priority = 'tag')
+
+
+} // End of class PivotalTrackerREST implements iPivotalTrackerRest

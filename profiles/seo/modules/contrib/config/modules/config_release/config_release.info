@@ -1,0 +1,5 @@
+name = Config releases
+description = Helps automate feature releases releases
+core = 7.x
+configure = admin/config/system/config/releases
+dependencies[] = config

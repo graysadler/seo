@@ -1,0 +1,62 @@
+name = SEO
+description = Start with an SEO ready site
+version = 7.x-1.0
+core = 7.x
+project = "drupal"
+dependencies[] = block
+dependencies[] = dblog
+dependencies[] = blog
+dependencies[] = admin_menu
+dependencies[] = page_title
+dependencies[] = globalredirect
+dependencies[] = metatag
+dependencies[] = search404
+dependencies[] = xmlsitemap
+dependencies[] = site_verify
+dependencies[] = linkchecker
+dependencies[] = taxonomy_title
+dependencies[] = htmlpurifier
+dependencies[] = menu_attributes
+dependencies[] = footermap
+dependencies[] = pathauto
+dependencies[] = subpathauto
+dependencies[] = contentoptimizer
+dependencies[] = site_map
+dependencies[] = panelizer
+dependencies[] = panels
+dependencies[] = panels_ipe
+dependencies[] = panels_node
+dependencies[] = panels_extra_layouts
+dependencies[] = libraries
+dependencies[] = googleanalytics
+dependencies[] = wysiwyg
+dependencies[] = views
+dependencies[] = media
+dependencies[] = media_wysiwyg
+dependencies[] = media_internet
+dependencies[] = features
+dependencies[] = honeypot
+dependencies[] = seo_settings
+dependencies[] = webform
+dependencies[] = comment
+dependencies[] = entity
+dependencies[] = uuid
+dependencies[] = uuid_features
+dependencies[] = link
+dependencies[] = statistics
+dependencies[] = afflink
+dependencies[] = features_override
+dependencies[] = module_filter
+
+
+
+
+
+
+
+
+
+
+
+
+

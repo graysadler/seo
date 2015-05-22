@@ -1,0 +1,5 @@
+name = Enterprise Apps
+description = Support for Open Enterprise Apps customization
+core = 7.x
+package = Open Enterprise
+dependencies[] = features

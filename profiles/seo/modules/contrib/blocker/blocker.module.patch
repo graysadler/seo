@@ -1,0 +1,18 @@
+Index: profiles/openenterprise/modules/contrib/blocker/blocker.module
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- profiles/openenterprise/modules/contrib/blocker/blocker.module	(date 1427901103000)
++++ profiles/openenterprise/modules/contrib/blocker/blocker.module	(revision )
+@@ -255,7 +255,9 @@
+ function blocker_entity_load($entities, $type) {
+   // We need to know the type of the entity as it isn't passed in to some functions so add it here.
+   foreach ($entities as $entity) {
++    if (!isset($entity->entity_type)) {
+-    $entity->entity_type = $type;
++      $entity->entity_type = $type;
++    }
+   }
+ }
+ 
