@@ -1,5 +1,5 @@
 # Allow a basic settings.php that includes local.settings.php file for local env
-#sites/*/settings*.php
+sites/*/settings*.php  
 sites/*/local.settings.php
 
 # Ignore paths that contain user-generated content.
