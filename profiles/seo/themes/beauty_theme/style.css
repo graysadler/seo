@@ -84,8 +84,11 @@ header, hgroup, footer, section, article, aside {
 }
 
 /* Body, Common Classes & Wrap */
-p { margin: 0 0 1em }
+.content {font-size: 12pt; }
+p { margin: 0 0 1em; font-size: 12pt; }
 strong { font-weight: 700 }
+p strong {font-size: 13pt;}
+
 em { font-style: italic }
 pre{
   margin: 20px 0;
