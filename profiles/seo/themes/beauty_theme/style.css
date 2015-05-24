@@ -231,7 +231,7 @@ td{
 
 /* .nav */
 .mobile-nav {display: none;}
-#main-menu {position: relative; height: 40px; background: url('images/nav_bg.gif') no-repeat center; padding: 0 20px; margin-top: 40px; clear: both; line-height: 1em; text-transform: uppercase;}
+#main-menu {position: relative; height: 40px; background: url('images/nav_bg.gif') no-repeat center; padding: 0 20px; margin-top: 1em; clear: both; line-height: 1em; text-transform: uppercase;}
 
 #main-menu ul {list-style: none;}
 
