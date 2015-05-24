@@ -334,7 +334,7 @@ body.sidebar-first #content {
 
 .node-teaser .teaser-date span {color: #fff; font-size: 1.4em;}
 
-.node h2.title, h1.page-title {font: italic 400 1.8em 'Lora', Serif; margin: 10px 0 5px 0; line-height: 1.2em;}
+.node h2.title, h1.page-title {font: italic 400 2em 'Lora', Serif; margin: 10px 0 5px 0; line-height: 1.2em;}
 .node h2.title a {color: #000;}
 
 .node-teaser .node-teaser-title {
