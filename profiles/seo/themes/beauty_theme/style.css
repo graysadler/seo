@@ -172,6 +172,10 @@ mark, ins {
   background: #fff9c0;
   text-decoration: none;
 }
+
+ins {
+  background: transparent;
+}
 sup,
 sub {
   font-size: 75%;
@@ -993,4 +997,8 @@ border-left: 1px solid; border-right: 1px solid; height: 40px; margin-left: -36p
     font-family: 'Muli',Arial,Verdana,Sans-serif;
     padding: 5px;
   }
+}
+
+.panels-pane {
+  margin-bottom: 1em;
 }
