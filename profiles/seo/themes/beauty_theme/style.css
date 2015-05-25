@@ -1005,3 +1005,9 @@ border-left: 1px solid; border-right: 1px solid; height: 40px; margin-left: -36p
 .panel-pane {
   margin-bottom: 2em;
 }
+
+.pane-webform-client-block-1 {
+  padding: 1em;
+  background-color: #ff8f85;
+  border-radius: 1em;
+}
